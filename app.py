@@ -86,6 +86,14 @@ def recommend():
     recommendations = search_catalog_cosine(query)
     return jsonify(recommendations)
 
+@app.route("/api/fine", methods=["POST"])
+def fine():
+    data = request.get_json()
+    if not data or "query" not in data:
+        return jsonify({"error": "Please provide a 'query' field in JSON body"}), 400
+
+    return jsonify("fine")
+
 # Run the API server locally
 if __name__ == "__main__":
     app.run(port = 8080, debug=True)
