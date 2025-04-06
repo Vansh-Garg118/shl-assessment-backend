@@ -10,7 +10,7 @@ from sentence_transformers import SentenceTransformer
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)  
+CORS(app, resources={r"/": {"origins": ""}},)
 
 # Load FAISS index and metadata
 index = faiss.read_index("catalog_index_cosine.faiss")
@@ -72,7 +72,10 @@ def search_catalog_cosine(user_query, top_k=10):
         })
     return results
 
-# Flask route to handle POST requests
+@app.route('/', methods=["GET"])
+def home():
+    return jsonify({"message": "Welcome to the homepage!"})
+
 @app.route("/api/recommend", methods=["POST"])
 def recommend():
     data = request.get_json()
@@ -85,4 +88,4 @@ def recommend():
 
 # Run the API server locally
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(port = 8080, debug=True)
