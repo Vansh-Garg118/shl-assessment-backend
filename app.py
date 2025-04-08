@@ -22,7 +22,7 @@ with open("catalog_metadata.pkl", "rb") as f:
     catalog_metadata = pickle.load(f)
 
 # Load Sentence Transformer model
-model = SentenceTransformer("my_local_model")
+model = SentenceTransformer("all-MiniLM-L6-v2")
 
 # Utility to extract plain text from a URL (e.g. job description page)
 def extract_text_from_url(url):
