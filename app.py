@@ -47,7 +47,7 @@ def extract_text_from_url(url):
         return ""
 
 # Semantic search function
-def search_catalog_cosine(user_query, top_k=10):
+def search_catalog_cosine(user_query, top_k=10, include_title=True):
     urls = re.findall(r'(https?://\S+)', user_query)
     for url in urls:
         scraped = extract_text_from_url(url)
@@ -60,24 +60,55 @@ def search_catalog_cosine(user_query, top_k=10):
     results = []
     for idx, score in zip(indices[0], scores[0]):
         item = catalog_metadata[idx]
-        results.append({
-            "title": item.get("Title"),
+
+        # Extract numeric value from duration
+        raw_duration = item.get("Assessment Length", "")
+        match = re.search(r'\d+(\.\d+)?', str(raw_duration))
+        numeric_duration = float(match.group()) if match else None
+        if numeric_duration and numeric_duration.is_integer():
+            numeric_duration = int(numeric_duration)
+
+        # Split test type into list
+        raw_test_type = item.get("Test Type", "")
+        test_type_list = [s.strip() for s in raw_test_type.split(",") if s.strip()]
+
+        result_item = {
             "url": item.get("URL"),
-            "duration": item.get("Assessment Length"),
-            "remote_testing": item.get("Remote Testing"),
-            "adaptive": "Yes" if item.get("Adaptive/IRT Support") == 1 else "No",
-            "test_type": item.get("Test Type"),
-            "job_levels": item.get("Job Levels"),
-            "languages": item.get("Languages"),
-        })
-    return results
+            "description": item.get("Description"),
+            "duration": numeric_duration,
+            "remote_support": item.get("Remote Testing"),
+            "adaptive_support": "Yes" if item.get("Adaptive/IRT Support") == 1 else "No",
+            "test_type": test_type_list
+        }
+
+        if include_title:
+            result_item["title"] = item.get("Title")
+
+        results.append(result_item)
+
+    return {"recommended_assessments": results}
+
 
 @app.route('/', methods=["GET"])
 def home():
     return jsonify({"message": "Welcome to the homepage!"})
 
-@app.route("/api/recommend", methods=["POST"])
+@app.route('/health', methods=["GET"])
+def health():
+    return jsonify({"status": "healthy"})
+
+@app.route("/recommend", methods=["POST"])
 def recommend():
+    data = request.get_json()
+    if not data or "query" not in data:
+        return jsonify({"error": "Please provide a 'query' field in JSON body"}), 400
+
+    query = data["query"]
+    recommendations = search_catalog_cosine(query,include_title=False)
+    return jsonify(recommendations)
+
+@app.route("/api/recommend", methods=["POST"])
+def api_recommend():
     data = request.get_json()
     if not data or "query" not in data:
         return jsonify({"error": "Please provide a 'query' field in JSON body"}), 400
@@ -86,13 +117,6 @@ def recommend():
     recommendations = search_catalog_cosine(query)
     return jsonify(recommendations)
 
-@app.route("/api/fine", methods=["POST"])
-def fine():
-    data = request.get_json()
-    if not data or "query" not in data:
-        return jsonify({"error": "Please provide a 'query' field in JSON body"}), 400
-
-    return jsonify("fine")
 
 # Run the API server locally
 if __name__ == "__main__":
