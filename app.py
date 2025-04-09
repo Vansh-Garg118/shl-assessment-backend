@@ -10,7 +10,7 @@ from sentence_transformers import SentenceTransformer
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app, resources={r"/": {"origins": "*"}},)
+CORS(app)
 
 # Load FAISS index and metadata
 index = faiss.read_index("catalog_index_cosine.faiss")
